@@ -49,6 +49,7 @@ namespace euank {
 
     void Image::Write(std::string outfile, uint8_t *data, int xres, int yres, unsigned int chans) {
       ImageOutput *out = ImageOutput::create(outfile);
+      Image::errflag = false;
 
       if(!out) {
         Image::errflag = true;
