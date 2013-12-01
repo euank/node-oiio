@@ -1,4 +1,5 @@
 var is = require('is');
+var extend = require('node.extend');
 
 var slice = function(arr) {
   return Array.prototype.slice.call(arr);
@@ -45,10 +46,42 @@ function Pixel(fakeArgs) {
     return ret;
   };
   this.clamp = function() {
-    for(var i=0;i<this.channels.length;i++) {
-      this.channels[i] = Math.max(0, Math.min(255, this.channels[i]));
+    var ret = extend(true, {}, this);
+    for(var i=0;i<ret.channels.length;i++) {
+      ret.channels[i] = Math.max(0, Math.min(255, this.channels[i]));
     }
-    return this;
+    return ret;
+  };
+
+  this.minus = function(rhs) {
+    var ret;
+    if(rhs.channels.length > this.channels.length) {
+      ret = extend(true, {}, rhs);
+    } else {
+      ret = extend(true, {}, this);
+    }
+    for(var i=0;i<ret.channels.length;i++) {
+      if(rhs.channels.length < i || this.channels.length < i) {
+        ret.channels[i] = 255; //max diff if the channels don't line up
+      } else {
+        ret.channels[i] = this.channels[i] - rhs.channels[i];
+      }
+    }
+    return ret;
+  };
+  this.abs = function() {
+    var ret = extend(true, {}, this);
+    for(var i=0;i<this.channels.length;i++) {
+      ret.channels[i] = Math.abs(this.channels[i]);
+    }
+    return ret;
+  };
+  this.getAvg = function() {
+    var total = 0;
+    for(var i=0;i<this.channels.length;i++) {
+      total += this.channels[i];
+    }
+    return total / this.channels.length;
   };
 }
 Pixel.TYPES = TYPES;
