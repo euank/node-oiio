@@ -5,7 +5,8 @@
   "main": "image.js",
   "dependencies": {
     "is": "~0.2.6",
-    "node.extend": "~1.0.8"
+    "node.extend": "~1.0.8",
+    "color-convert": "~0.3.0"
   },
   "devDependencies": {},
   "scripts": {

@@ -1,11 +1,13 @@
 var is = require('is');
 var extend = require('node.extend');
+var converter = require("color-convert")();
 
 var slice = function(arr) {
   return Array.prototype.slice.call(arr);
 };
 
 var TYPES = {
+  GRAYSCALE: 'GRAYSCALE',
   RGB: 'RGB',
   RGBA: 'RGBA'
 }; // TODO, support more types
@@ -24,7 +26,7 @@ function Pixel(fakeArgs) {
     for(i=0;i<args[0].length;i++) {
       this.channels.push(args[0][i]);
     }
-  } else if(args.length == 3 || args.length == 4 && is.number(args[0])) {
+  } else if(args.length == 1 || args.length == 3 || args.length == 4 && is.number(args[0])) {
     for(i=0;i<args.length;i++) {
       if(!is.number(args[i])) throw new TypeError("Invalid argument type. Expected all to be numbers.");
       this.channels.push(args[i]);
@@ -37,6 +39,7 @@ function Pixel(fakeArgs) {
   }
   if(this.channels.length == 3) this.type = TYPES.RGB;
   if(this.channels.length == 4) this.type = TYPES.RGBA;
+  if(this.channels.length == 1) this.type = TYPES.GRAYSCALE;
 
   this.toBuffer = function() {
     var ret = new Buffer(this.channels.length);
@@ -61,7 +64,7 @@ function Pixel(fakeArgs) {
       ret = extend(true, {}, this);
     }
     for(var i=0;i<ret.channels.length;i++) {
-      if(rhs.channels.length < i || this.channels.length < i) {
+      if(rhs.channels.length <= i || this.channels.length <= i) {
         ret.channels[i] = 255; //max diff if the channels don't line up
       } else {
         ret.channels[i] = this.channels[i] - rhs.channels[i];
@@ -82,6 +85,27 @@ function Pixel(fakeArgs) {
       total += this.channels[i];
     }
     return total / this.channels.length;
+  };
+  this.getRGBAvg = function() {
+    var total = 0;
+    var numChans = this.channels.length == 4 ? 3 : this.channels.length;
+    for(var i=0;i<numChans;i++) {
+      total += this.channels[i];
+    }
+    return total / numChans;
+
+  };
+  this.desaturate = function() {
+    var ret = extend(true, {}, this);
+    if(this.channels.length >= 3) {
+      var hsl = converter.rgb(this.channels.slice(0,3)).hsl();
+      hsl[1] = 0;
+      var rgb = converter.hsl(hsl).rgb();
+      ret.channels[0] = rgb[0];
+      ret.channels[1] = rgb[1];
+      ret.channels[2] = rgb[2];
+    }
+    return ret;
   };
 }
 Pixel.TYPES = TYPES;

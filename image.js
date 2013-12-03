@@ -14,7 +14,9 @@ var slice = function(arr) {
  * new Image(width, height, channels)
  */
 function Image(varargs) {
-  var img = {};
+  var img = {
+    channelnames: null
+  };
   var args = slice(arguments);
   if(args.length == 1 && is.string(args[0])) {
     img = oiio.read(args[0]);
@@ -32,17 +34,11 @@ function Image(varargs) {
     img.width = args[1];
     img.height = args[2];
     img.channels = args[3];
-    img.channelnames = img.channels == 3 ? "RGB" 
-                     : img.channels == 4 ? "RGBA" 
-                     : Array(img.channels.length+1).join('C');
     img.path = null;
   } else if(args.length == 3) {
     img.width = args[0];
     img.height = args[1];
     img.channels = args[2];
-    img.channelnames = img.channels == 3 ? "RGB" 
-                     : img.channels == 4 ? "RGBA" 
-                     : Array(img.channels.length+1).join('C');
     img.data = new Buffer(img.width * img.height * img.channels);
     img.path = null;
   } else {
@@ -58,6 +54,12 @@ function Image(varargs) {
   this.path = img.path;
   this.channels = img.channels;
   this.channelnames = img.channelnames;
+  if(this.channelnames === null) {
+    this.channelnames = this.channels == 3 ? "RGB" 
+                     : this.channels == 4 ? "RGBA" 
+                     : this.channels == 1 ? "I"
+                     : Array(this.channels.length+1).join('C');
+  }
 
   this.write = function(filename) {
     if(arguments.length === 0 && this.path !== null) {
@@ -74,15 +76,15 @@ function Image(varargs) {
   this.getPixel = function(x, y) {
     if(x < 0 || x >= this.width) throw new Error("X out of bounds: " + x);
     if(y < 0 || y >= this.height) throw new Error("Y out of bounds: " + y);
-    return new Pixel(this.data.slice((y * this.width + x) * this.channels,
-                                      (y * this.width + x) * this.channels + this.channels));
+    var startOffset = (y * this.width + x) * this.channels;
+    return new Pixel(this.data.slice(startOffset, startOffset + this.channels));
   };
 
   this.setPixel = function(x, y, pixel) {
     if(x < 0 || x >= this.width) throw new Error("X out of bounds");
     if(y < 0 || y >= this.height) throw new Error("Y out of bounds");
     var dat = pixel.toBuffer();
-    dat.copy(this.data, (y * this.width + x) * this.channels);
+    dat.copy(this.data, (y * this.width + x) * this.channels, 0, this.channels);
   };
 
   this.scale = function(width, height) {
@@ -106,6 +108,19 @@ function Image(varargs) {
     } else {
       return this.scale(width, Math.round(height * this.width / this.height));
     }
+  };
+
+  this.grayScale = function() {
+    var ret = new Image(this.width, this.height, 1);
+    for(var x=0;x<this.width;x++) {
+      for(var y=0;y<this.height;y++) {
+        var pix = this.getPixel(x, y);
+        var grayscalePixel = pix.desaturate();
+        var onedpixel = new Pixel(grayscalePixel.getRGBAvg());
+        ret.setPixel(x,y,onedpixel);
+      }
+    }
+    return ret;
   };
 }
 
