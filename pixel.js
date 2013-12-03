@@ -22,7 +22,9 @@ function Pixel(fakeArgs) {
   var i;
   var args = slice(arguments);
   this.channels = [];
-  if(args.length == 1 && Buffer.isBuffer(args[0])) {
+  if(args.length == 1 && is.instance(args[0], Pixel)) {
+    this.channels = slice(args[0].channels);
+  } else if(args.length == 1 && Buffer.isBuffer(args[0])) {
     for(i=0;i<args[0].length;i++) {
       this.channels.push(args[0][i]);
     }
@@ -43,6 +45,7 @@ function Pixel(fakeArgs) {
 
 }
 Pixel.TYPES = TYPES;
+
 Pixel.prototype.toBuffer = function() {
   var ret = new Buffer(this.channels.length);
   for(var i=0;i<this.channels.length;i++) {
@@ -51,46 +54,33 @@ Pixel.prototype.toBuffer = function() {
   return ret;
 };
 Pixel.prototype.clamp = function() {
-  var ret = extend(true, {}, this);
-  for(var i=0;i<ret.channels.length;i++) {
-    ret.channels[i] = Math.max(0, Math.min(255, this.channels[i]));
+  for(var i=0;i<this.channels.length;i++) {
+    this.channels[i] = Math.max(0, Math.min(255, this.channels[i]));
   }
-  return ret;
+  return this;
 };
 
 Pixel.prototype.minus = function(rhs) {
-  var ret;
-  if(rhs.channels.length > this.channels.length) {
-    ret = extend(true, {}, rhs);
-  } else {
-    ret = extend(true, {}, this);
-  }
-  for(var i=0;i<ret.channels.length;i++) {
-    if(rhs.channels.length <= i || this.channels.length <= i) {
-      ret.channels[i] = 255; //max diff if the channels don't line up
-    } else {
-      ret.channels[i] = this.channels[i] - rhs.channels[i];
+  for(var i=0;i<this.channels.length;i++) {
+    if(rhs.channels.length > i && this.channels.length > i) {
+      this.channels[i] -= rhs.channels[i];
     }
   }
-  return ret;
+  return this;
 };
 Pixel.prototype.plus = function(rhs) {
-  var ret = new Pixel(this.channels);
   for(var i=0;i<this.channels.length;i++) {
-    if(rhs.channels.length <= i || this.channels.length <= i) {
-      ret.channels[i] = (this.channels.length <= i) ? 255 : this.channels[i];
-    } else {
-      ret.channels[i] = this.channels[i] + rhs.channels[i];
+    if(rhs.channels.length > i && this.channels.length > i) {
+      this.channels[i] += rhs.channels[i];
     }
   }
-  return ret;
+  return this;
 };
 Pixel.prototype.abs = function() {
-  var ret = extend(true, {}, this);
   for(var i=0;i<this.channels.length;i++) {
-    ret.channels[i] = Math.abs(this.channels[i]);
+    this.channels[i] = Math.abs(this.channels[i]);
   }
-  return ret;
+  return this;
 };
 Pixel.prototype.getAvg = function() {
   var total = 0;
@@ -109,24 +99,22 @@ Pixel.prototype.getRGBAvg = function() {
 
 };
 Pixel.prototype.desaturate = function() {
-  var ret = extend(true, {}, this);
   if(this.channels.length >= 3) {
     var hsl = converter.rgb(this.channels.slice(0,3)).hsl();
     hsl[1] = 0;
     var rgb = converter.hsl(hsl).rgb();
-    ret.channels[0] = rgb[0];
-    ret.channels[1] = rgb[1];
-    ret.channels[2] = rgb[2];
+    this.channels[0] = rgb[0];
+    this.channels[1] = rgb[1];
+    this.channels[2] = rgb[2];
   }
-  return ret;
+  return this;
 };
 
 Pixel.prototype.scaledBy = function(val) {
-  var ret = new Pixel(this.channels);
-  for(var i=0;i<ret.channels.length;i++) {
-    ret.channels[i] *= val;
+  for(var i=0;i<this.channels.length;i++) {
+    this.channels[i] *= val;
   }
-  return ret;
+  return this;
 };
 
 module.exports = Pixel;
