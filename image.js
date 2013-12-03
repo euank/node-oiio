@@ -7,9 +7,10 @@ var slice = function(arr) {
   return Array.prototype.slice.call(arr);
 };
 
-var arrayFill = function(arr, val) {
-  for(var i=0;i<arr.length;i++) {
-    arr[i] = val;
+var arrayFill = function(len, val) {
+  var arr = [];
+  for(var i=0;i<len;i++) {
+    arr.push(val);
   }
   return arr;
 };
@@ -133,7 +134,7 @@ function Image(varargs) {
   /* Gaussian blur */
   this.blur = function(radius, sigma) {
     /* horizontal pass */
-    var r1,r2;
+    var r1,r2,x,y;
     var sigma2 = sigma * sigma;
     /* Create gaussian matrix */
     var quarterBlur = Array(radius+1);
@@ -157,17 +158,27 @@ function Image(varargs) {
       }
     }
     //Here we go. We're about to slow to a crawl
+    /* precache pixel objects */
     var ret = new Image(this);
-    for(var x=0;x<this.width;x++) {
-      for(var y=0;y<this.height;y++) {
-        var thisPixel = new Pixel(arrayFill(Array(this.channels.length), 0));
+    var pixelArr = [];
+    for(x=0;x<this.width;x++) {
+      var pixelRow = [];
+      for(y=0;y<this.height;y++) {
+        pixelRow.push(this.getPixel(x,y));
+      }
+      pixelArr.push(pixelRow);
+    }
+    for(x=0;x<this.width;x++) {
+      for(y=0;y<this.height;y++) {
+        var thisPixel = new Pixel(arrayFill(this.channels, 0));
+
         for(r1=-radius;r1<radius+1;r1++) {
           for(r2=-radius;r2<radius+1;r2++) {
             var r11 = r1;
             var r21 = r2;
             if(x+r1 < 0 || x+r1 >= this.width) r11 = -r1;
             if(y+r2 < 0 || y+r2 >= this.height) r21 = -r2;
-            thisPixel = thisPixel.plus(this.getPixel(x+r11, y+r21).scaledBy(quarterBlur[Math.abs(r11)][Math.abs(r21)]));
+            thisPixel = thisPixel.plus(pixelArr[x+r11][y+r21].scaledBy(quarterBlur[Math.abs(r11)][Math.abs(r21)]));
           }
         }
         this.setPixel(x,y,thisPixel);
