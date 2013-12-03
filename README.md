@@ -21,11 +21,26 @@ channel per pixel.
 Usage
 -----
 
-TODO, fill this in after it works
+```
+var Image = require("node-oiio");
+/* Pixel is likely not needed to be included. 
+   It's what image.getPixel returns, which
+   is how you'll more likely work with it */
+var Pixel = require("node-oiio/pixel");
 
-Compiling
+var img = new Image('lena.png');
+var smallImg = img.scale(50, 50);
+smallImg.write('smalllena.png');
+```
+
+Installing
 ---------
+
+_After_ you get libOpenImageIO you can simply `npm install node-oiio`
 
 This library depends on libOpenImageIO being available. On
 Gentoo `emerge media-libs/openimageio` and node-gyp being
 available should be sufficient.
+
+If anyone wants to alter it so that it downloads and locally compiles OIIO to link against,
+that would probably be better.
