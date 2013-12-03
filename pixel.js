@@ -73,15 +73,10 @@ function Pixel(fakeArgs) {
     return ret;
   };
   this.plus = function(rhs) {
-    var ret;
-    if(rhs.channels.length > this.channels.length) {
-      ret = extend(true, {}, rhs);
-    } else {
-      ret = extend(true, {}, this);
-    }
-    for(var i=0;i<ret.channels.length;i++) {
+    var ret = new Pixel(this.channels);
+    for(var i=0;i<this.channels.length;i++) {
       if(rhs.channels.length <= i || this.channels.length <= i) {
-        ret.channels[i] = 255; //max diff if the channels don't line up
+        ret.channels[i] = (this.channels.length <= i) ? 255 : this.channels[i];
       } else {
         ret.channels[i] = this.channels[i] + rhs.channels[i];
       }
@@ -125,7 +120,7 @@ function Pixel(fakeArgs) {
   };
 
   this.scaledBy = function(val) {
-    var ret = extend(true, {}, this);
+    var ret = new Pixel(this.channels);
     for(var i=0;i<ret.channels.length;i++) {
       ret.channels[i] *= val;
     }

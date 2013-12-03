@@ -181,7 +181,7 @@ function Image(varargs) {
             thisPixel = thisPixel.plus(pixelArr[x+r11][y+r21].scaledBy(quarterBlur[Math.abs(r11)][Math.abs(r21)]));
           }
         }
-        this.setPixel(x,y,thisPixel);
+        ret.setPixel(x,y,thisPixel);
       }
     }
     return ret;
