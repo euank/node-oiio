@@ -254,17 +254,17 @@ Image.prototype.binaryBlob = function() {
 /* These are the moments referred to by Stricker & Orengo's paper ``Similarity of color images'' */
 Image.prototype.getMoments = function() {
   var moments = [];
-  var i;
-  for(var chan=0;chan<this.channels;i++) {
+  var i,x,y,pix;
+  for(i=0;i<this.channels;i++) {
     moments.push({
       average: 0,
       variance: 0,
       skewness: 0
     });
   }
-  for(var x=0;x<this.width;x++) {
-    for(var y=0;y<this.height;y++) {
-      var pix = getPixel(x,y);
+  for(x=0;x<this.width;x++) {
+    for(y=0;y<this.height;y++) {
+      pix = this.getPixel(x,y);
       for(i=0;i<pix.channels.length;i++) {
         moments[i].average += pix.channels[i];
       }
@@ -273,15 +273,27 @@ Image.prototype.getMoments = function() {
   for(i=0;i<moments.length;i++) {
     moments[i].average /= (this.width*this.height);
   }
-  for(var x=0;x<this.width;x++) {
-    for(var y=0;y<this.height;y++) {
-      var pix = getPixel(x,y);
+  for(x=0;x<this.width;x++) {
+    for(y=0;y<this.height;y++) {
+      pix = this.getPixel(x,y);
       for(i=0;i<pix.channels.length;i++) {
-        moments[i].variance += (pix.channels[i]);
+        var diff = pix.channels[i] - moments[i].average;
+        moments[i].variance += diff * diff;
+        moments[i].skewness += diff * diff * diff;
       }
     }
   }
-
+  for(i=0;i<moments.length;i++) {
+    moments[i].variance /= (this.width*this.height);
+    moments[i].skewness /= (this.width*this.height);
+    moments[i].variance = Math.sqrt(moments[i].variance);
+    if(moments[i].skewness < 0) {
+      moments[i].skewness = -1 * Math.pow(-1 * moments[i].skewness, 1/3);
+    } else {
+      moments[i].skewness = Math.pow(moments[i].skewness, 1/3);
+    }
+  }
+  return moments;
 };
 
 module.exports = Image;
