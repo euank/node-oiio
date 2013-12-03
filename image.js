@@ -7,6 +7,13 @@ var slice = function(arr) {
   return Array.prototype.slice.call(arr);
 };
 
+var arrayFill = function(arr, val) {
+  for(var i=0;i<arr.length;i++) {
+    arr[i] = val;
+  }
+  return arr;
+};
+
 /*
  * new Image(filename)
  * new Image(otherImage)
@@ -122,6 +129,54 @@ function Image(varargs) {
     }
     return ret;
   };
+
+  /* Gaussian blur */
+  this.blur = function(radius, sigma) {
+    /* horizontal pass */
+    var r1,r2;
+    var sigma2 = sigma * sigma;
+    /* Create gaussian matrix */
+    var quarterBlur = Array(radius+1);
+    for(r1=0;r1<radius+1;r1++) {
+      quarterBlur[r1] = Array(radius+1);
+      for(r2=0;r2<radius+1;r2++) {
+        quarterBlur[r1][r2] = 1 / (2 * Math.PI * sigma2) * 
+          Math.pow(Math.E, -1 * ((r1 * r1 + r2 * r2) / (2 * sigma2)));
+      }
+    }
+    /* normalize */
+    var matrixSum = 0;
+    for(r1=-radius;r1<radius+1;r1++) {
+      for(r2=-radius;r2<radius+1;r2++) {
+        matrixSum += quarterBlur[Math.abs(r1)][Math.abs(r2)];
+      }
+    }
+    for(r1=0;r1<radius+1;r1++) {
+      for(r2=0;r2<radius+1;r2++) {
+        quarterBlur[r1][r2] /= matrixSum;
+      }
+    }
+    //Here we go. We're about to slow to a crawl
+    var ret = new Image(this);
+    for(var x=0;x<this.width;x++) {
+      for(var y=0;y<this.height;y++) {
+        var thisPixel = new Pixel(arrayFill(Array(this.channels.length), 0));
+        for(r1=-radius;r1<radius+1;r1++) {
+          for(r2=-radius;r2<radius+1;r2++) {
+            var r11 = r1;
+            var r21 = r2;
+            if(x+r1 < 0 || x+r1 >= this.width) r11 = -r1;
+            if(y+r2 < 0 || y+r2 >= this.height) r21 = -r2;
+            thisPixel = thisPixel.plus(this.getPixel(x+r11, y+r21).scaledBy(quarterBlur[Math.abs(r11)][Math.abs(r21)]));
+          }
+        }
+        this.setPixel(x,y,thisPixel);
+      }
+    }
+    return ret;
+  };
 }
+
+
 
 module.exports = Image;

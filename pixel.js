@@ -26,7 +26,7 @@ function Pixel(fakeArgs) {
     for(i=0;i<args[0].length;i++) {
       this.channels.push(args[0][i]);
     }
-  } else if(args.length == 1 || args.length == 3 || args.length == 4 && is.number(args[0])) {
+  } else if((args.length == 1 || args.length == 3 || args.length == 4) && is.number(args[0])) {
     for(i=0;i<args.length;i++) {
       if(!is.number(args[i])) throw new TypeError("Invalid argument type. Expected all to be numbers.");
       this.channels.push(args[i]);
@@ -72,6 +72,22 @@ function Pixel(fakeArgs) {
     }
     return ret;
   };
+  this.plus = function(rhs) {
+    var ret;
+    if(rhs.channels.length > this.channels.length) {
+      ret = extend(true, {}, rhs);
+    } else {
+      ret = extend(true, {}, this);
+    }
+    for(var i=0;i<ret.channels.length;i++) {
+      if(rhs.channels.length <= i || this.channels.length <= i) {
+        ret.channels[i] = 255; //max diff if the channels don't line up
+      } else {
+        ret.channels[i] = this.channels[i] + rhs.channels[i];
+      }
+    }
+    return ret;
+  };
   this.abs = function() {
     var ret = extend(true, {}, this);
     for(var i=0;i<this.channels.length;i++) {
@@ -104,6 +120,14 @@ function Pixel(fakeArgs) {
       ret.channels[0] = rgb[0];
       ret.channels[1] = rgb[1];
       ret.channels[2] = rgb[2];
+    }
+    return ret;
+  };
+
+  this.scaledBy = function(val) {
+    var ret = extend(true, {}, this);
+    for(var i=0;i<ret.channels.length;i++) {
+      ret.channels[i] *= val;
     }
     return ret;
   };
