@@ -251,4 +251,37 @@ Image.prototype.binaryBlob = function() {
   return ret;
 };
 
+/* These are the moments referred to by Stricker & Orengo's paper ``Similarity of color images'' */
+Image.prototype.getMoments = function() {
+  var moments = [];
+  var i;
+  for(var chan=0;chan<this.channels;i++) {
+    moments.push({
+      average: 0,
+      variance: 0,
+      skewness: 0
+    });
+  }
+  for(var x=0;x<this.width;x++) {
+    for(var y=0;y<this.height;y++) {
+      var pix = getPixel(x,y);
+      for(i=0;i<pix.channels.length;i++) {
+        moments[i].average += pix.channels[i];
+      }
+    }
+  }
+  for(i=0;i<moments.length;i++) {
+    moments[i].average /= (this.width*this.height);
+  }
+  for(var x=0;x<this.width;x++) {
+    for(var y=0;y<this.height;y++) {
+      var pix = getPixel(x,y);
+      for(i=0;i<pix.channels.length;i++) {
+        moments[i].variance += (pix.channels[i]);
+      }
+    }
+  }
+
+};
+
 module.exports = Image;
