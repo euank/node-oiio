@@ -117,4 +117,12 @@ Pixel.prototype.scaledBy = function(val) {
   return this;
 };
 
+Pixel.prototype.getRGB = function() {
+  if(this.channels.length >= 3) {
+    return this.channels.slice(0,3);
+  } else {
+    return [this.channels[0], this.channels[0], this.channels[0]];
+  }
+};
+
 module.exports = Pixel;

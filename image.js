@@ -91,6 +91,7 @@ Image.prototype.getPixel = function(x, y) {
 };
 
 Image.prototype.setPixel = function(x, y, pixel) {
+  if(arguments.length !== 3) throw new Error("Invalid arguments");
   if(x < 0 || x >= this.width) throw new Error("X out of bounds");
   if(y < 0 || y >= this.height) throw new Error("Y out of bounds");
   var dat = pixel.toBuffer();
@@ -189,5 +190,35 @@ Image.prototype.blur = function(radius, sigma) {
   return ret;
 };
 
+Image.prototype.normalize = function(min, max) {
+  if(typeof min == 'undefined') min = 0;
+  if(typeof max == 'undefined') max = 255;
+  var x,y;
+  var ret = new Image(this);
+  var pixelArr = [];
+  for(x=0;x<ret.width;x++) {
+    var pixelRow = [];
+    for(y=0;y<ret.height;y++) {
+      pixelRow.push(ret.getPixel(x,y));
+    }
+    pixelArr.push(pixelRow);
+  }
+  var chansThatMatter = ret.channels >= 3 ? 3 : ret.channels == 2 ? 1 : ret.channels;
+  for(var i=0;i<chansThatMatter;i++) {
+    var minIntensity = Math.min.apply(null,pixelArr.map(function(row) {return Math.min.apply(null,row.map(function(item) {return item.channels[i];}));}));
+    var maxIntensity = Math.max.apply(null,pixelArr.map(function(row) {return Math.max.apply(null,row.map(function(item) {return item.channels[i];}));}));
+    for(x=0;x<ret.width;x++) {
+      for(y=0;y<ret.height;y++) {
+        pixelArr[x][y].channels[i] = (pixelArr[x][y].channels[i] - minIntensity) * (max - min) / (maxIntensity - minIntensity) + min;
+      }
+    }
+  }
+  for(x=0;x<ret.width;x++) {
+    for(y=0;y<ret.height;y++) {
+      ret.setPixel(x,y,pixelArr[x][y]);
+    }
+  }
+  return ret;
+};
 
 module.exports = Image;
