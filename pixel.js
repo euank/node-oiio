@@ -125,4 +125,17 @@ Pixel.prototype.getRGB = function() {
   }
 };
 
+Pixel.prototype.maxValue = function() {
+  for(var i=0;i<this.channels.length;i++) {
+    this.channels[i] = 255;
+  }
+  return this;
+};
+Pixel.prototype.minValue = function() {
+  for(var i=0;i<this.channels.length;i++) {
+    this.channels[i] = 0;
+  }
+  return this;
+};
+
 module.exports = Pixel;

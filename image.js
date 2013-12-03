@@ -221,4 +221,34 @@ Image.prototype.normalize = function(min, max) {
   return ret;
 };
 
+Image.prototype.threshold = function(val) {
+  if(typeof val == 'undefined') val = 128;
+  var ret = new Image(this);
+  var x,y;
+  for(x=0;x<this.width;x++) {
+    for(y=0;y<this.height;y++) {
+      var pix = ret.getPixel(x,y);
+      if(pix.getAvg() > val) ret.setPixel(x,y,pix.maxValue());
+      else ret.setPixel(x,y,pix.minValue());
+    }
+  }
+  return ret;
+}
+
+Image.prototype.binaryBlob = function() {
+  var x,y;
+  var ret = new Buffer(Math.ceil(this.width * this.height / 8));
+  console.log(ret);
+  for(x=0;x<ret.length;x++) {
+    ret[x] = 0;
+  }
+  for(x=0;x<this.width;x++) {
+    for(y=0;y<this.height;y++) {
+      var on = this.getPixel(x,y).getAvg() > 128 ? 1 : 0;
+      ret[Math.floor((y * this.width + x) / 8)] |= (on << (y * this.width + x) % 8);
+    }
+  }
+  return ret;
+};
+
 module.exports = Image;
