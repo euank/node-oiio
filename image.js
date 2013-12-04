@@ -3,9 +3,7 @@ var Pixel = require("./pixel");
 var is = require('is');
 var extend = require('node.extend');
 
-var slice = function(arr) {
-  return Array.prototype.slice.call(arr);
-};
+var slice = function(arr) {return Array.prototype.slice.call(arr);};
 
 var arrayFill = function(len, val) {
   var arr = [];
@@ -28,6 +26,9 @@ function Image(varargs) {
   var args = slice(arguments);
   if(args.length == 1 && is.string(args[0])) {
     img = oiio.read(args[0]);
+    if(typeof img == 'undefined') {
+      throw new TypeError("Invalid image type");
+    }
     img.path = args[0];
   } else if(args.length == 1 && is.instance(args[0], Image)) {
     img = extend({}, args[0]);
@@ -99,6 +100,7 @@ Image.prototype.setPixel = function(x, y, pixel) {
 };
 
 Image.prototype.scale = function(width, height) {
+  if(width == this.width && height == this.height) return new Image(this);
   var ret = new Image(width, height, this.channels);
   var sampleSquareWidth = this.width / width;
   var sampleSquareHeight = this.height / height;

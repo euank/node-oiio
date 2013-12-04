@@ -62,16 +62,22 @@ Pixel.prototype.clamp = function() {
 
 Pixel.prototype.minus = function(rhs) {
   for(var i=0;i<this.channels.length;i++) {
-    if(rhs.channels.length > i && this.channels.length > i) {
+    if(rhs.channels.length > i) {
       this.channels[i] -= rhs.channels[i];
+    } else if(i == 3) {
+      //Alpha of an image without alpha is 255
+      this.channels[i] -= 255;
     }
   }
   return this;
 };
 Pixel.prototype.plus = function(rhs) {
   for(var i=0;i<this.channels.length;i++) {
-    if(rhs.channels.length > i && this.channels.length > i) {
+    if(rhs.channels.length > i) {
       this.channels[i] += rhs.channels[i];
+    } else if(i == 3) {
+      //Alpha of an image without alpha is 255
+      this.channels[i] += 255;
     }
   }
   return this;
