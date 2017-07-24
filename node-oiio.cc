@@ -1,5 +1,6 @@
 #include <string>
 #include <node.h>
+#include <nan.h>
 #include <node_buffer.h>
 #include <v8.h>
 #include "Image.hpp"
@@ -16,36 +17,29 @@ using namespace v8;
  *
  * Throws a typeerror if args are wrong. Returns undefined if it can't open the image
  */
-Handle<Value> ReadImage(const Arguments& args) {
-  HandleScope scope;
+void ReadImage(const Nan::FunctionCallbackInfo<Value>& args) {
   if(!args[0]->IsString()) {
-    ThrowException(Exception::TypeError(String::New("Wrong arguments")));
+    Nan::ThrowTypeError("Wrong arguments");
+    return;
   }
   euank::cpsc404::Image img(std::string(*v8::String::Utf8Value(args[0]->ToString())));
   if(euank::cpsc404::Image::errflag) {
-    return scope.Close(Undefined());
+    return;
   }
 
-  node::Buffer *slowbuff = node::Buffer::New(img.pixels.size());
-  memcpy(node::Buffer::Data(slowbuff), &img.pixels[0], img.pixels.size());
+  auto buff = Nan::NewBuffer((char *)&img.pixels[0], img.pixels.size());
+  auto obj = Nan::New<v8::Object>();
+  obj->Set(Nan::New("data").ToLocalChecked(), buff.ToLocalChecked());
+  obj->Set(Nan::New("width").ToLocalChecked(),
+      Nan::New((uint32_t)img.width));
+  obj->Set(Nan::New("height").ToLocalChecked(),
+      Nan::New((uint32_t)img.height));
+  obj->Set(Nan::New("channels").ToLocalChecked(),
+      Nan::New(img.channels));
+  obj->Set(Nan::New("channelnames").ToLocalChecked(),
+      Nan::New<v8::String>(img.channelnames).ToLocalChecked());
 
-  /* See http://sambro.is-super-awesome.com/2011/03/03/creating-a-proper-buffer-in-a-node-c-addon/
-   * for why this code is needed to make a real buffer 
-   */
-  Local<Object> globalObj = Context::GetCurrent()->Global();
-  Local<Function> bufferConstructor = Local<Function>::Cast(globalObj->Get(String::New("Buffer")));
-  Handle<Value> constructorArgs[3] = { slowbuff->handle_, v8::Integer::New(img.pixels.size()), v8::Integer::New(0) };
-  Local<Object> buff = bufferConstructor->NewInstance(3, constructorArgs);
-
-  Local<Object> obj = Object::New();
-  obj->Set(String::NewSymbol("data"), buff);
-  obj->Set(String::NewSymbol("width"),Number::New(img.width));
-  obj->Set(String::NewSymbol("height"), Number::New(img.height));
-  obj->Set(String::NewSymbol("channels"), Number::New(img.channels));
-  obj->Set(String::NewSymbol("channelnames"), String::New(img.channelnames.c_str()));
-
-  //return scope.Close(buff->handle_);
-  return scope.Close(obj);
+  args.GetReturnValue().Set(obj);
 }
 
 /*
@@ -53,15 +47,14 @@ Handle<Value> ReadImage(const Arguments& args) {
  *
  * args are (filename: string, pixels: Buffer, width: Integer, height: Integer, channels: Integer
  */
-Handle<Value> WriteImage(const Arguments& args) {
-  HandleScope scope;
+void WriteImage(const Nan::FunctionCallbackInfo<Value>& args) {
   if(args.Length() != 5) {
-    ThrowException(Exception::TypeError(String::New("Wrong number of arguments")));
-    return scope.Close(Undefined());
+    Nan::ThrowTypeError("Wrong number of arguments");
+    return;
   }
   if(!(args[0]->IsString() && args[1]->IsObject() && args[2]->IsNumber() && args[3]->IsNumber() && args[4]->IsNumber())) {
-    ThrowException(Exception::TypeError(String::New("Invalid arguments")));
-    return scope.Close(Undefined());
+    Nan::ThrowTypeError("Invalid arguments");
+    return;
   }
   std::string filename = std::string(*v8::String::Utf8Value(args[0]->ToString()));
   uint64_t width = args[2]->Uint32Value();
@@ -73,23 +66,22 @@ Handle<Value> WriteImage(const Arguments& args) {
   pixels = (uint8_t *)node::Buffer::Data(buffObj);
   size_t size = node::Buffer::Length(buffObj);
   if(size != (width * height * channels)) {
-    ThrowException(Exception::RangeError(String::New("Buffer size is wrong")));
-    return scope.Close(Undefined());
+    Nan::RangeError("Buffer size is wrong");
+    return;
   }
 
   euank::cpsc404::Image::Write(filename, pixels, width, height, channels);
   if(euank::cpsc404::Image::errflag) {
-    return scope.Close(Undefined());
+    return;
   }
-
-  return scope.Close(True());
+  args.GetReturnValue().Set(Nan::True());
 }
 
-void init(Handle<Object> exports) {
-  exports->Set(String::NewSymbol("read"),
-      FunctionTemplate::New(ReadImage)->GetFunction());
-  exports->Set(String::NewSymbol("write"),
-      FunctionTemplate::New(WriteImage)->GetFunction());
+void init(Local<Object> exports, Local<Object> module) {
+  exports->Set(Nan::New("read").ToLocalChecked(),
+      Nan::New<FunctionTemplate>(ReadImage)->GetFunction());
+  exports->Set(Nan::New("write").ToLocalChecked(),
+      Nan::New<FunctionTemplate>(WriteImage)->GetFunction());
 }
 
 NODE_MODULE(nodeoiio, init)
